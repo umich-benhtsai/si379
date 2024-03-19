@@ -175,6 +175,22 @@ function drawBoard() {
       DELAY_WHEN_DROP / parseFloat(speedInput.value)
     ); // Animate the change in height of the bar
 
+    await Promise.all([
+      animateBallDownward(
+        circle,
+        DELAY_WHEN_DROP / parseFloat(speedInput.value)
+      ),
+      animateOpacityToZero(
+        circle,
+        DELAY_WHEN_DROP / parseFloat(speedInput.value)
+      ),
+      changeHeightTo(
+        actualBars[barIndex],
+        newBarHeight,
+        DELAY_WHEN_DROP / parseFloat(speedInput.value)
+      ),
+    ]);
+
     circle.remove(); // Remove the circle from the SVG element
   }
 
@@ -224,17 +240,122 @@ function drawBoard() {
   return cleanup; // Return the cleanup function
 }
 
+async function animateBallDownward(circle, duration) {
+  function easeOutQuad(t) {
+    return t * (2 - t);
+  }
+
+  return new Promise((resolve, reject) => {
+    const startY = parseFloat(circle.getAttribute("cy"));
+    const targetY = startY + 20;
+    const animationStarted = Date.now();
+
+    function step() {
+      const pct = (Date.now() - animationStarted) / duration;
+      const pos = easeOutQuad(pct);
+
+      circle.setAttribute("cy", startY + (targetY - startY) * pos);
+
+      if (pct < 1) {
+        requestAnimationFrame(step);
+      } else {
+        circle.setAttribute("cy", targetY);
+        resolve();
+      }
+    }
+
+    step();
+  });
+}
+
+async function animateOpacityToZero(circle, duration) {
+  return new Promise((resolve, reject) => {
+    const startOpacity = parseFloat(circle.getAttribute("opacity"));
+    const targetOpacity = 0;
+    const animationStarted = Date.now();
+
+    function step() {
+      const pct = (Date.now() - animationStarted) / duration;
+
+      circle.setAttribute(
+        "opacity",
+        startOpacity + (targetOpacity - startOpacity) * pct
+      );
+
+      if (pct < 1) {
+        requestAnimationFrame(step);
+      } else {
+        circle.setAttribute("opacity", targetOpacity);
+        resolve();
+      }
+    }
+
+    step();
+  });
+}
+
 // Animates the height of a rectangle from its current height to a new height
 async function changeHeightTo(rect, toHeight, duration) {
-  await pause(duration);
-  rect.setAttribute("height", toHeight);
+  // await pause(duration);
+  // rect.setAttribute("height", toHeight);
+  function easeInQuad(t) {
+    return t * t;
+  }
+
+  return new Promise((resolve, reject) => {
+    const startHeight = parseFloat(rect.getAttribute("height"));
+    const animationStarted = Date.now();
+
+    function step() {
+      const pct = (Date.now() - animationStarted) / duration;
+      const pos = easeInQuad(pct);
+
+      rect.setAttribute("height", startHeight + (toHeight - startHeight) * pos);
+
+      if (pct < 1) {
+        requestAnimationFrame(step);
+      } else {
+        rect.setAttribute("height", toHeight);
+        resolve();
+      }
+    }
+
+    step();
+  });
 }
 
 // Animates the movement of a circle to a new location
 async function moveCircleTo(circle, cx, cy, duration) {
-  await pause(duration);
-  circle.setAttribute("cx", cx);
-  circle.setAttribute("cy", cy);
+  // await pause(duration);
+  // circle.setAttribute("cx", cx);
+  // circle.setAttribute("cy", cy);
+  function easeOutQuad(t) {
+    return t * (2 - t);
+  }
+
+  return new Promise((resolve, reject) => {
+    const fromX = parseFloat(circle.getAttribute("cx"));
+    const fromY = parseFloat(circle.getAttribute("cy"));
+    const animationStarted = Date.now();
+
+    function step() {
+      const pct = (Date.now() - animationStarted) / duration;
+      const pos = easeOutQuad(pct);
+
+      circle.setAttribute("cx", fromX + (cx - fromX) * pos);
+      circle.setAttribute("cy", fromY + (cy - fromY) * pos);
+
+      if (pct < 1) {
+        requestAnimationFrame(step);
+      } else {
+        circle.setAttribute("cx", cx);
+        circle.setAttribute("cy", cy);
+        resolve();
+      }
+    }
+
+    step();
+  });
 }
 
 /**
